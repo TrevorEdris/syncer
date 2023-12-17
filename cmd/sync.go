@@ -1,27 +1,53 @@
 /*
 Copyright © 2023 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
 import (
+	"context"
 	"fmt"
 
+	"github.com/TrevorEdris/retropie-utils/pkg/log"
+	"github.com/TrevorEdris/syncer/pkg/config"
+	"github.com/TrevorEdris/syncer/pkg/syncer"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"gopkg.in/yaml.v3"
 )
 
 // syncCmd represents the sync command
 var syncCmd = &cobra.Command{
 	Use:   "sync",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "Sync files to a remote location",
+	Long: `Sync files to a remote location.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+The syncer will look at the configured RomsFolder
+for any files matching a known file suffix, provided
+the corresponding sync for that file type is enabled.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("sync called")
+		ctx := context.Background()
+		ctx = log.ToCtx(ctx, log.FromCtx(ctx))
+
+		cfg := config.Config{}
+		err := viper.Unmarshal(&cfg)
+		if err != nil {
+			panic(err)
+		}
+
+		b, err := yaml.Marshal(cfg)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("Running sync with config:\n%s", string(b))
+
+		s, err := syncer.NewSyncer(syncer.SyncConfig{cfg})
+		if err != nil {
+			panic(err)
+		}
+		err = s.Sync(ctx)
+		if err != nil {
+			panic(err)
+		}
 	},
 }
 

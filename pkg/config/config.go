@@ -11,76 +11,27 @@ import (
 )
 
 type (
+	// TODO: Allow for arbitrary locations?
 	Config struct {
-		// TODO: Re-evaluate a good UX for this
-		// CustomLocations []CustomLocation
-		Emulators []Emulator
-		Storage   Storage
-	}
-
-	// CustomLocation struct {
-	// 	Name         string
-	// 	AbsolutePath string
-	// 	Extensions   []string
-	// }
-
-	Emulator struct {
-		Name                 string
-		InGameSaves          bool
-		SaveStates           bool
-		Roms                 bool
-		AdditionalExtensions []string
+		Storage    Storage `mapstructure:"storage"`
+		RomsFolder string  `mapstructure:"romsFolder"`
+		Sync       Sync    `mapstructure:"sync"`
 	}
 
 	Storage struct {
-		GoogleDrive storage.GDriveConfig
-		S3          storage.S3Config
-		SFTP        storage.SFTPConfig
+		GoogleDrive storage.GDriveConfig `mapstructure:"googleDrive"`
+		S3          storage.S3Config     `mapstructure:"s3"`
+		SFTP        storage.SFTPConfig   `mapstructure:"sftp"`
+	}
+
+	Sync struct {
+		Roms   bool `mapstructure:"roms"`
+		Saves  bool `mapstructure:"saves"`
+		States bool `mapstructure:"states"`
 	}
 )
 
 var example = Config{
-	Emulators: []Emulator{
-		{
-			Name:        "gb",
-			InGameSaves: true,
-			SaveStates:  false,
-			Roms:        false,
-		},
-		{
-			Name:        "gba",
-			InGameSaves: true,
-			SaveStates:  false,
-			Roms:        false,
-			AdditionalExtensions: []string{
-				"mycustomext", "backupthisextensiontoo",
-			},
-		},
-		{
-			Name:        "gbc",
-			InGameSaves: true,
-			SaveStates:  false,
-			Roms:        false,
-		},
-		{
-			Name:        "n64",
-			InGameSaves: true,
-			SaveStates:  false,
-			Roms:        false,
-		},
-		{
-			Name:        "nes",
-			InGameSaves: true,
-			SaveStates:  false,
-			Roms:        false,
-		},
-		{
-			Name:        "snes",
-			InGameSaves: true,
-			SaveStates:  false,
-			Roms:        false,
-		},
-	},
 	Storage: Storage{
 		GoogleDrive: storage.GDriveConfig{
 			Enabled: false,
@@ -93,12 +44,11 @@ var example = Config{
 			Enabled: false,
 		},
 	},
-	// CustomLocations: []CustomLocation{
-	// 	{
-	// 		Name:         "boot config",
-	// 		AbsolutePath: "/boot/config.txt",
-	// 	},
-	// },
+	Sync: Sync{
+		Roms:   false,
+		Saves:  true,
+		States: true,
+	},
 }
 
 var validate *validator.Validate
@@ -114,6 +64,11 @@ func CreateExample(outputDir string) error {
 		return err
 	}
 	defer f.Close()
+	userHomeDir, err := os.UserHomeDir()
+	if err != nil {
+		return err
+	}
+	example.RomsFolder = filepath.Join(userHomeDir, "RetroPie", "roms")
 	yamlData, err := yaml.Marshal(&example)
 	if err != nil {
 		return err
